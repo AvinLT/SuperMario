@@ -4,42 +4,68 @@ clock = pygame.time.Clock() #initialize clock
 
 pygame.init() #initialize pygame
 
-WINDOW_SIZE = (500,500) #window size
+WINDOW_SIZE = (600,400) #window size
+
+display = pygame.Surface((300,192))
+
+
 screen = pygame.display.set_mode(WINDOW_SIZE,0,32) # initialize window
 
-
-playerPos = [250,500 - 64 - 10] #position of main character
-
-playerImage = pygame.transform.scale(pygame.image.load("sprites\marioset\stand.png"), (64, 64)) # standing sprite
+playerSize = 28
+playerImage = pygame.transform.scale(pygame.image.load("sprites\marioset\stand.png"), (playerSize, playerSize)) # standing sprite
 
 runImages = [
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run1right.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2right.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3right.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2right.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run1left.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3left.png"), (64, 64)),
-pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (64, 64))
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run1right.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2right.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3right.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2right.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run1left.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3left.png"), (playerSize, playerSize)),
+pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (playerSize, playerSize))
 ] # the sprites for runnning
+
+blockSize = 16
+groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBlock.png"), (blockSize, blockSize))
+brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (blockSize, blockSize))
+
+
+#playerImage.set_colorkey((255,255,255))
+"""for image in range(len(runImages)):
+    image.set_colorkey((255,255,255))"""
+
+
+
+playersize = playerImage.get_height()
+
+
+playerPos = [100,144-28] #position of main character
 
 playerRunCount = 999 # 999 signifies that player is not moving. if moving will be between 0 and 7
 runImagesDelay = 9 # how slow you want transitions from each running sprite
 tempCount = 0
 
-playersize = playerImage.get_height()
 
-#pygame.draw.rect(screen,(255,255,255),(0,450,500,10))
 
-"""jumpPower = 10
-jumpCount = 10"""
+gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
 
 jumping = False
 velY = 10 # acts as velocity
 
 while True: #Main game loop
 
-    screen.fill((255,255,255)) # makes screen white
+    display.fill((255,255,255)) # makes screen white
 
     for event in pygame.event.get(): #event loop
         if event.type == QUIT: # checks if window is closed
@@ -91,6 +117,20 @@ while True: #Main game loop
             jumping = False
             jumpCount = jumpPower"""
 
+    tile_rects = []
+    y = 0
+    for row in gameMap:
+        x = 0
+        for tile in row:
+            if tile == 1:
+                display.blit(groundBlock, (x * blockSize,y * blockSize ))
+            if tile == 2:
+                display.blit(brick, (x * blockSize, y * blockSize))
+            if tile != 0:
+                tile_rects.append(pygame.Rect(x * blockSize, y * blockSize, blockSize, blockSize))
+            x += 1
+        y += 1
+
 
 
     if playerPos[1] <= WINDOW_SIZE[1] - playersize + velY and jumping == True: # is player above ground and jumping
@@ -109,10 +149,13 @@ while True: #Main game loop
 
 
     if playerRunCount == 999: # if standing
-        screen.blit(playerImage,playerPos)
+        display.blit(playerImage,playerPos)
     else: # if running
-        screen.blit(runImages[playerRunCount],playerPos)
+        display.blit(runImages[playerRunCount],playerPos)
 
+
+    surf = pygame.transform.scale(display,WINDOW_SIZE)
+    screen.blit(surf, (0,0))
 
     pygame.display.update() # update display
     clock.tick(60) # set frame rate
