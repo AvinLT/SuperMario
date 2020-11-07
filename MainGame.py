@@ -6,7 +6,7 @@ pygame.init() #initialize pygame
 
 WINDOW_SIZE = (600,400) #window size
 
-display = pygame.Surface((300,192))
+display = pygame.Surface((320,192))
 
 
 screen = pygame.display.set_mode(WINDOW_SIZE,0,32) # initialize window
@@ -39,11 +39,16 @@ brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (
 playersize = playerImage.get_height()
 
 
-playerPos = [100,144-28] #position of main character
+#playerPos = [100,144-28] #position of main character
+playerRect = pygame.Rect(100,144-28, playerSize, playerSize)
 
 playerRunCount = 999 # 999 signifies that player is not moving. if moving will be between 0 and 7
 runImagesDelay = 9 # how slow you want transitions from each running sprite
 tempCount = 0
+
+movement = [0,0]
+
+hitDirection = {"top": False, "bottom": False, "left":False, "right":False}
 
 
 
@@ -55,13 +60,59 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-           [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+           [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
 
 jumping = False
-velY = 10 # acts as velocity
+#velY = 10 # acts as velocity
+def colliderects(tileRects, playerRect):
+    hitRects = []
+    for tile in tileRects:
+        if playerRect.colliderect(tile):
+            hitRects.append(tile)
+    return hitRects
+
+
+def move(playerRect, movement, tileRects, jumping):
+    hitDirection = {"top": False, "bottom": False, "left": False, "right": False}
+    hitRect = colliderects(tileRects, playerRect)
+
+    playerRect.x += movement[0]
+
+    for tile in hitRect:
+        if movement[0] > 0:
+            playerRect.right = tile.left
+            hitDirection["right"] = True
+        elif movement[0] < 0:
+            playerRect.left = tile.right
+            hitDirection["left"] = True
+
+    hitRect = colliderects(tileRects, playerRect)
+
+    playerRect.y += movement[1]
+
+    for tile in hitRect:
+        if movement[1] < 0:
+            playerRect.top = tile.bottom
+            hitDirection["top"] = True
+        elif movement[1] > 0:
+            playerRect.bottom = tile.top
+            hitDirection["bottom"] = True
+            jumping = False
+            movement[1] = 0
+
+    return playerRect, hitDirection, jumping
+
+
+def colliderects2(tileRects, playerRect):
+    hitRects = []
+    for tile in tileRects:
+        tile.y = tile.y - 1
+        if playerRect.colliderect(tile):
+            hitRects.append(tile)
+    return hitRects
 
 while True: #Main game loop
 
@@ -81,15 +132,16 @@ while True: #Main game loop
     keys = pygame.key.get_pressed()
     
     if keys[K_d]: # when d is pressed, moves right
-        playerPos[0] += 2
-
+        movingright = True
+        movement[0] = 2
         tempCount = (tempCount +1)  % runImagesDelay # only transitions to next sprite when tempCount is 0.
         if tempCount==0:
             playerRunCount += 1
             playerRunCount = playerRunCount % 4 # loops between 0 and 3, which have correspondin sprites in runImages list.
 
     elif keys[K_a]:
-        playerPos[0] -= 2
+        movingleft = True
+        movement[0] = -2
 
         tempCount = (tempCount + 1) % runImagesDelay # only transitions to next sprite when tempCount is 0.
         if tempCount == 0:
@@ -98,26 +150,21 @@ while True: #Main game loop
 
     else:
         playerRunCount = 999 # signifies player is standing
+        movingleft = False
+        movingright = False
+        movement[0] = 0
 
-
-    if keys[K_w]:
-        jumping = True
-
-    """if not(jumping):
+    if not jumping :
         if keys[K_w]:
             jumping = True
-    else:
-        if jumpPower > -10 and playerPos[1] < WINDOW_SIZE[1]-playersize:
-            neg = 1
-            if jumpCount < 0:
-                neg = -1
-            playerPos[1] -= (jumpCount ** 2) * 0.5 * neg
-            jumpCount -= 1
-        else:
-            jumping = False
-            jumpCount = jumpPower"""
+            movement[1] = -10
 
-    tile_rects = []
+
+
+
+
+
+    tileRects = []
     y = 0
     for row in gameMap:
         x = 0
@@ -127,18 +174,33 @@ while True: #Main game loop
             if tile == 2:
                 display.blit(brick, (x * blockSize, y * blockSize))
             if tile != 0:
-                tile_rects.append(pygame.Rect(x * blockSize, y * blockSize, blockSize, blockSize))
+                tileRects.append(pygame.Rect(x * blockSize, y * blockSize, blockSize, blockSize))
             x += 1
         y += 1
 
 
 
-    if playerPos[1] <= WINDOW_SIZE[1] - playersize + velY and jumping == True: # is player above ground and jumping
-        playerPos[1] -= velY 
-        velY -= 0.5 # velY = 0 when at top of jump.
-    else:
-        jumping = False
-        velY = 10 # set to 10 so that the start of next jump will start at fastest speed.
+
+
+
+    playerRect, hitDirection, jumping = move(playerRect, movement, tileRects, jumping)
+
+
+    """for tile in tileRects:
+        if movingright == True:
+            if playerRect.x + movement[0] >"""
+
+
+
+
+    if jumping == True: # is player above ground and jumping
+        movement[1] += 0.5 # velY = 0 when at top of jump.
+    """else:
+        movement[1] = 0""" # set to 10 so that the start of next jump will start at fastest speed.
+
+
+    """playerRect.x += movement[0]
+    playerRect.y += movement[1]"""
 
 
 
@@ -149,9 +211,9 @@ while True: #Main game loop
 
 
     if playerRunCount == 999: # if standing
-        display.blit(playerImage,playerPos)
+        display.blit(playerImage,[playerRect.x,playerRect.y])
     else: # if running
-        display.blit(runImages[playerRunCount],playerPos)
+        display.blit(runImages[playerRunCount],[playerRect.x,playerRect.y])
 
 
     surf = pygame.transform.scale(display,WINDOW_SIZE)
