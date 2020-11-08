@@ -25,33 +25,27 @@ pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3left.png"), (pla
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (playerSize, playerSize))
 ] # the sprites for runnning
 
-blockSize = 16
+blockSize = 16 #size of the blocks on map
 groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBlock.png"), (blockSize, blockSize))
 brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (blockSize, blockSize))
 
 
-#playerImage.set_colorkey((255,255,255))
-"""for image in range(len(runImages)):
-    image.set_colorkey((255,255,255))"""
 
 
 
-playersize = playerImage.get_height()
+playersize = playerImage.get_height()# size of player image
 
-
-#playerPos = [100,144-28] #position of main character
-playerRect = pygame.Rect(100,144-28, playerSize, playerSize)
+playerRect = pygame.Rect(100,144-28, playerSize, playerSize) # creates a rect for the player
 
 playerRunCount = 999 # 999 signifies that player is not moving. if moving will be between 0 and 7
 runImagesDelay = 9 # how slow you want transitions from each running sprite
 tempCount = 0
 
-movement = [0,0]
 
-hitDirection = {"top": False, "bottom": False, "left":False, "right":False}
-
+hitDirection = {"top": False, "bottom": False, "left":False, "right":False} # gives the direction of the collison
 
 
+#the map. 1 represents ground block. 2 represents brick. 0 is nothing
 gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -65,8 +59,7 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
 
-jumping = False
-#velY = 10 # acts as velocity
+#checks to see if player is colliding with any blocks on map
 def colliderects(tileRects, playerRect):
     hitRects = []
     for tile in tileRects:
@@ -74,12 +67,12 @@ def colliderects(tileRects, playerRect):
             hitRects.append(tile)
     return hitRects
 
-
-def move(playerRect, movement, tileRects, jumping):
+#if there is a collision, then set player position to right next to the colliding block.
+#the function outputs the updated player positon and the direction of the collision.
+def move(playerRect, movement, tileRects):
     hitDirection = {"top": False, "bottom": False, "left": False, "right": False}
-    hitRect = colliderects(tileRects, playerRect)
-
     playerRect.x += movement[0]
+    hitRect = colliderects(tileRects, playerRect)
 
     for tile in hitRect:
         if movement[0] > 0:
@@ -89,30 +82,25 @@ def move(playerRect, movement, tileRects, jumping):
             playerRect.left = tile.right
             hitDirection["left"] = True
 
+    playerRect.y += movement[1]
     hitRect = colliderects(tileRects, playerRect)
 
-    playerRect.y += movement[1]
-
     for tile in hitRect:
-        if movement[1] < 0:
-            playerRect.top = tile.bottom
-            hitDirection["top"] = True
-        elif movement[1] > 0:
+        if movement[1] > 0:
             playerRect.bottom = tile.top
             hitDirection["bottom"] = True
-            jumping = False
-            movement[1] = 0
+        elif movement[1] < 0:
+            playerRect.top = tile.bottom
+            hitDirection["top"] = True
 
-    return playerRect, hitDirection, jumping
+    return playerRect, hitDirection
 
+#shows if player is moving left or right
+movingRight = False
+movingLeft = False
 
-def colliderects2(tileRects, playerRect):
-    hitRects = []
-    for tile in tileRects:
-        tile.y = tile.y - 1
-        if playerRect.colliderect(tile):
-            hitRects.append(tile)
-    return hitRects
+#player velocity
+playerVelY = 0
 
 while True: #Main game loop
 
@@ -123,25 +111,49 @@ while True: #Main game loop
             pygame.quit() #stops pygame
             sys.exit() # stops script
 
-        """if event.type == KEYUP:
-            if event.key == K_w:
+        #although this code for controls fixes the bug that occurs when changing x direction quickly, it doesnt
+        #allow the animation to occur. Hopefully I can fix this later on. Right now, its not a big bug.
+        """if event.type == KEYDOWN:
+            if event.key == K_RIGHT:
+                movingRight = True
+
+                tempCount = (tempCount + 1) % runImagesDelay  # only transitions to next sprite when tempCount is 0.
+                if tempCount == 0:
+                    playerRunCount += 1
+                    playerRunCount = playerRunCount % 4  # loops between 0 and 3, which have correspondin sprites in runImages list.
+
+            if event.key == K_LEFT:
+                movingLeft = True
+
+                tempCount = (tempCount + 1) % runImagesDelay  # only transitions to next sprite when tempCount is 0.
+                if tempCount == 0:
+                    playerRunCount += 1
+                    playerRunCount = (playerRunCount % 4) + 4  # loops between 4 and 7, which have correspondin sprites in runImages list.
+
+            if event.key == K_UP:
+                playerVelY= -5
+                
+        if event.type == KEYUP:
+            if event.key == K_RIGHT:
+                movingRight = False
+                playerRunCount = 999
+            if event.key == K_LEFT:
+                movingLeft = False
                 playerRunCount = 999"""
 
 
-
     keys = pygame.key.get_pressed()
-    
+
     if keys[K_d]: # when d is pressed, moves right
-        movingright = True
-        movement[0] = 2
+        movingRight = True
+
         tempCount = (tempCount +1)  % runImagesDelay # only transitions to next sprite when tempCount is 0.
         if tempCount==0:
             playerRunCount += 1
             playerRunCount = playerRunCount % 4 # loops between 0 and 3, which have correspondin sprites in runImages list.
 
-    elif keys[K_a]:
-        movingleft = True
-        movement[0] = -2
+    elif keys[K_a]:# when a is pressed, moves left
+        movingLeft = True
 
         tempCount = (tempCount + 1) % runImagesDelay # only transitions to next sprite when tempCount is 0.
         if tempCount == 0:
@@ -150,14 +162,15 @@ while True: #Main game loop
 
     else:
         playerRunCount = 999 # signifies player is standing
-        movingleft = False
-        movingright = False
-        movement[0] = 0
+        movingLeft = False
+        movingRight = False
 
-    if not jumping :
-        if keys[K_w]:
+
+    if hitDirection["bottom"]==True: # stops the jump key being pressed when still in air.
+
+        if keys[K_w]:# when w is pressed, jumps
             jumping = True
-            movement[1] = -10
+            playerVelY = -6 # makes the player move up.
 
 
 
@@ -166,7 +179,7 @@ while True: #Main game loop
 
     tileRects = []
     y = 0
-    for row in gameMap:
+    for row in gameMap: # builds the map
         x = 0
         for tile in row:
             if tile == 1:
@@ -178,12 +191,34 @@ while True: #Main game loop
             x += 1
         y += 1
 
+    #playerMovement is the intended movement
+    playerMovement = [0, 0]
+
+    #x direction movement
+    if movingRight:
+        playerMovement[0] += 2
+    if movingLeft:
+        playerMovement[0] -= 2
+
+    #y direction movement
+    playerMovement[1] += playerVelY
+
+    # decreases the y velocity. when playerVelY is +ive, player goes up. whe -ive, player goes down.
+    playerVelY += 0.2
+
+    #sets the y velocity to max 3.
+    if playerVelY > 3:
+        playerVelY = 3
 
 
 
+    #updates the player position and the collision direction
+    playerRect, hitDirection= move(playerRect, playerMovement, tileRects)
 
+    #if the player is standing, set the y velocity to 0
+    if hitDirection['bottom']:
+        playerVelY = 0
 
-    playerRect, hitDirection, jumping = move(playerRect, movement, tileRects, jumping)
 
 
     """for tile in tileRects:
@@ -193,8 +228,8 @@ while True: #Main game loop
 
 
 
-    if jumping == True: # is player above ground and jumping
-        movement[1] += 0.5 # velY = 0 when at top of jump.
+    """if jumping == True: # is player above ground and jumping
+        movement[1] += 0.5""" # velY = 0 when at top of jump.
     """else:
         movement[1] = 0""" # set to 10 so that the start of next jump will start at fastest speed.
 
