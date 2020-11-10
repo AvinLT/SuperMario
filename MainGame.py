@@ -14,6 +14,7 @@ screen = pygame.display.set_mode(WINDOW_SIZE,0,32) # initialize window
 playerSize = 28
 playerImage = pygame.transform.scale(pygame.image.load("sprites\marioset\stand.png"), (playerSize, playerSize)) # standing sprite
 
+# the sprites for runnning
 runImages = [
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run1right.png"), (playerSize, playerSize)),
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2right.png"), (playerSize, playerSize)),
@@ -23,7 +24,15 @@ pygame.transform.scale(pygame.image.load(r"sprites\marioset\run1left.png"), (pla
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (playerSize, playerSize)),
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3left.png"), (playerSize, playerSize)),
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (playerSize, playerSize))
-] # the sprites for runnning
+]
+
+goombaSize = 16
+
+#enemy sprite
+goombaImages = [pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaL.png"), (goombaSize, goombaSize)),
+                pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaR.png"), (goombaSize, goombaSize)),
+                pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaSqa.png"), (goombaSize, goombaSize))]
+
 
 blockSize = 16 #size of the blocks on map
 groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBlock.png"), (blockSize, blockSize))
@@ -45,7 +54,7 @@ tempCount = 0
 hitDirection = {"top": False, "bottom": False, "left":False, "right":False} # gives the direction of the collison
 
 
-#the map. 1 represents ground block. 2 represents brick. 0 is nothing
+#the map. 1 represents ground block. 2 represents brick. 0 is nothing. each block is 16
 gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -58,6 +67,42 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
+
+
+#creates an enemy object.
+class enemies():
+
+    def __init__(self,x,y,velX,startX,endX,images):
+        self.x = x # x position
+        self.y = y # y position
+        self.velX = velX # velocity
+        self.startX = startX # left edge of path
+        self.endX = endX # right edge of path
+        self.squashed = False # checks if enemy is squashed
+        self.walkCount = 0 # used to render walking animation
+        self.images = images # the png images used
+
+    def move(self):
+        if not self.squashed:
+
+            self.x += self.velX
+            self.walkCount += 1
+
+
+            if self.x > self.endX:
+                self.velX = -self.velX
+                self.walkCount = 0
+            if self.x < self.startX:
+                self.velX = -self.velX
+                self.walkCount = 0
+
+
+    def draw(self):
+        if not self.squashed:
+            display.blit(self.images[(self.walkCount // 8) % 2], (self.x, self.y))
+        else:
+            display.blit(self.images[2], (self.x, self.y))
+
 
 #checks to see if player is colliding with any blocks on map
 def colliderects(tileRects, playerRect):
@@ -102,9 +147,14 @@ movingLeft = False
 #player velocity
 playerVelY = 0
 
+#initialising goomba
+goomba = enemies(66,128,1,64,256,goombaImages)
+
 while True: #Main game loop
 
     display.fill((255,255,255)) # makes screen white
+
+
 
     for event in pygame.event.get(): #event loop
         if event.type == QUIT: # checks if window is closed
@@ -215,27 +265,14 @@ while True: #Main game loop
     #updates the player position and the collision direction
     playerRect, hitDirection= move(playerRect, playerMovement, tileRects)
 
+    #updates goomba movements
+    goomba.move()
+
     #if the player is standing, set the y velocity to 0
     if hitDirection['bottom']:
         playerVelY = 0
-
-
-
-    """for tile in tileRects:
-        if movingright == True:
-            if playerRect.x + movement[0] >"""
-
-
-
-
-    """if jumping == True: # is player above ground and jumping
-        movement[1] += 0.5""" # velY = 0 when at top of jump.
-    """else:
-        movement[1] = 0""" # set to 10 so that the start of next jump will start at fastest speed.
-
-
-    """playerRect.x += movement[0]
-    playerRect.y += movement[1]"""
+    if hitDirection['top']:
+        playerVelY = 0
 
 
 
@@ -249,7 +286,7 @@ while True: #Main game loop
         display.blit(playerImage,[playerRect.x,playerRect.y])
     else: # if running
         display.blit(runImages[playerRunCount],[playerRect.x,playerRect.y])
-
+    goomba.draw()
 
     surf = pygame.transform.scale(display,WINDOW_SIZE)
     screen.blit(surf, (0,0))
