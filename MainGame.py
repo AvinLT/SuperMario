@@ -1,5 +1,8 @@
 import pygame, sys
+import copy
 from pygame.locals import * #import modules
+
+
 clock = pygame.time.Clock() #initialize clock
 
 pygame.init() #initialize pygame
@@ -44,7 +47,7 @@ brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (
 
 playersize = playerImage.get_height()# size of player image
 
-playerRect = pygame.Rect(100,144-28, playerSize, playerSize) # creates a rect for the player
+playerRect = pygame.Rect(10,144-100, playerSize, playerSize) # creates a rect for the player
 
 playerRunCount = 999 # 999 signifies that player is not moving. if moving will be between 0 and 7
 runImagesDelay = 9 # how slow you want transitions from each running sprite
@@ -52,7 +55,7 @@ tempCount = 0
 
 
 hitDirection = {"top": False, "bottom": False, "left":False, "right":False} # gives the direction of the collison
-
+enemeyHit = {"top": False, "bottom": False, "left":False, "right":False}
 
 #the map. 1 represents ground block. 2 represents brick. 0 is nothing. each block is 16
 gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -81,11 +84,14 @@ class enemies():
         self.squashed = False # checks if enemy is squashed
         self.walkCount = 0 # used to render walking animation
         self.images = images # the png images used
+        self.rect = pygame.Rect(self.x, self.y, self.images[0].get_width(), self.images[0].get_height())
 
+        self.deadTimer = 60
     def move(self):
         if not self.squashed:
 
             self.x += self.velX
+            self.rect.x += self.velX
             self.walkCount += 1
 
 
@@ -95,13 +101,17 @@ class enemies():
             if self.x < self.startX:
                 self.velX = -self.velX
                 self.walkCount = 0
-
+        else:
+            self.velX = 0
+            self.deadTimer -= 1
 
     def draw(self):
         if not self.squashed:
             display.blit(self.images[(self.walkCount // 8) % 2], (self.x, self.y))
         else:
-            display.blit(self.images[2], (self.x, self.y))
+            if self.deadTimer > 0:
+                display.blit(self.images[2], (self.x, self.y))
+
 
 
 #checks to see if player is colliding with any blocks on map
@@ -139,6 +149,20 @@ def move(playerRect, movement, tileRects):
             hitDirection["top"] = True
 
     return playerRect, hitDirection
+
+def enemycollide(playerRect,movement,rectlist,playerVelY):
+    temp = copy.deepcopy(playerRect)
+    temp.y += movement[1]
+    hitRect = colliderects(rectlist, temp)
+    squashed = False
+
+    for enemy in hitRect:
+        if movement[1] >= 1.5:
+            playerVelY = -3
+            squashed = True
+
+    return playerVelY, squashed
+
 
 #shows if player is moving left or right
 movingRight = False
@@ -264,6 +288,11 @@ while True: #Main game loop
 
     #updates the player position and the collision direction
     playerRect, hitDirection= move(playerRect, playerMovement, tileRects)
+
+
+    #playerRect, enemyHit = move(playerRect, playerMovement, [goomba.rect])
+    if goomba.squashed != True:
+        playerVelY, goomba.squashed = enemycollide(playerRect, playerMovement, [goomba.rect], playerVelY)
 
     #updates goomba movements
     goomba.move()
