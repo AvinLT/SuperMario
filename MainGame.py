@@ -62,7 +62,7 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-           [0,0,0,0,0,0,2,2,2,2,2,2,2,2,0,0,0,0,0,0],
+           [0,0,0,0,0,0,2,2,2,2,3,2,2,2,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -72,10 +72,42 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
 
 
+class blocks():
+    def __init__(self,x,y,blockType,hit,images):
+        self.x = x
+        self.y = y
+        self.blockType = blockType
+        self.hit = hit
+        self.animeCount = 0
+        self.fixedYPos = self.y
+        self.images = images
+        self.velY = 0
+        self.finished = False
+
+    def hitanime(self):
+
+        self.velY += 0.2
+        self.y += self.velY
+
+        if self.y > self.fixedYPos:
+            self.y = self.fixedYpos
+            self.hit = False
+            self.finished = True
+
+    def draw(self):
+        self.animeCount += 1
+
+        if not self.hit:
+            display.blit(self.images[(self.animeCount // 6) % 3], (self.x, self.y))
+        else:
+            display.blit(self.images[3], (self.x, self.y))
+
+
+
 #creates an enemy object.
 class enemies():
 
-    def __init__(self,x,y,velX,startX,endX,images):
+    def __init__(self,x,y,startX,endX,velX,images):
         self.x = x # x position
         self.y = y # y position
         self.velX = velX # velocity
@@ -172,7 +204,8 @@ movingLeft = False
 playerVelY = 0
 
 #initialising goomba
-goomba = enemies(66,128,1,64,256,goombaImages)
+enemyList = [enemies(66,128,64,256,1,goombaImages),
+             enemies(128,48,112,175,1,goombaImages)]
 
 while True: #Main game loop
 
@@ -260,6 +293,8 @@ while True: #Main game loop
                 display.blit(groundBlock, (x * blockSize,y * blockSize ))
             if tile == 2:
                 display.blit(brick, (x * blockSize, y * blockSize))
+            if tile == 3:
+                pass
             if tile != 0:
                 tileRects.append(pygame.Rect(x * blockSize, y * blockSize, blockSize, blockSize))
             x += 1
@@ -291,11 +326,14 @@ while True: #Main game loop
 
 
     #playerRect, enemyHit = move(playerRect, playerMovement, [goomba.rect])
-    if goomba.squashed != True:
-        playerVelY, goomba.squashed = enemycollide(playerRect, playerMovement, [goomba.rect], playerVelY)
+    for enemy in enemyList:
+        if enemy.squashed != True:
+            playerVelY, enemy.squashed = enemycollide(playerRect, playerMovement, [enemy.rect], playerVelY)
+        enemy.move()
 
     #updates goomba movements
-    goomba.move()
+
+    #goomba1.move()
 
     #if the player is standing, set the y velocity to 0
     if hitDirection['bottom']:
@@ -315,7 +353,9 @@ while True: #Main game loop
         display.blit(playerImage,[playerRect.x,playerRect.y])
     else: # if running
         display.blit(runImages[playerRunCount],[playerRect.x,playerRect.y])
-    goomba.draw()
+
+    for enemy in enemyList:
+        enemy.draw()
 
     surf = pygame.transform.scale(display,WINDOW_SIZE)
     screen.blit(surf, (0,0))
