@@ -14,7 +14,7 @@ display = pygame.Surface((320,192)) # what we display images on. later print 'di
 
 screen = pygame.display.set_mode(WINDOW_SIZE,0,32) # initialize window
 
-playerSize = 28
+playerSize = 28# size of player image
 playerImage = pygame.transform.scale(pygame.image.load("sprites\marioset\stand.png"), (playerSize, playerSize)) # standing sprite
 
 # the sprites for runnning
@@ -30,13 +30,15 @@ pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (pla
 ]
 
 coinImages = [
-pygame.image.load(r"sprites\enemies\c1.png"),
-pygame.image.load(r"sprites\enemies\c2.png"),
-pygame.image.load(r"sprites\enemies\c3.png"),
-pygame.image.load(r"sprites\enemies\c4.png"),
-pygame.image.load(r"sprites\enemies\c5.png"),
-pygame.image.load(r"sprites\enemies\c6.png")
+pygame.image.load(r"sprites\interactables\c1.png"),
+pygame.image.load(r"sprites\interactables\c2.png"),
+pygame.image.load(r"sprites\interactables\c3.png"),
+pygame.image.load(r"sprites\interactables\c4.png"),
+pygame.image.load(r"sprites\interactables\c5.png"),
+pygame.image.load(r"sprites\interactables\c6.png")
 ]
+
+fireBallImages = pygame.image.load(r"sprites\interactables\fireBall.png")
 
 goombaSize = 16
 
@@ -45,7 +47,7 @@ goombaImages = [pygame.transform.scale(pygame.image.load(r"sprites\enemies\goomb
                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaR.png"), (goombaSize, goombaSize)),
                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaSqa.png"), (goombaSize, goombaSize))]
 
-fireFlower = pygame.image.load(r"sprites\enemies\fireflower.png")
+fireFlowerImages = [pygame.image.load(r"sprites\interactables\fireflower.png")]
 
 blockSize = 16 #size of the blocks on map
 groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBlock.png"), (blockSize, blockSize))
@@ -53,28 +55,15 @@ mysteryBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\mystery
 brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (blockSize, blockSize))
 
 
-
-
-
-playersize = playerImage.get_height()# size of player image
-
-playerRect = pygame.Rect(10,144-100, playerSize, playerSize) # creates a rect for the player
-
-playerRunCount = 999 # 999 signifies that player is not moving. if moving will be between 0 and 7
-runImagesDelay = 9 # how slow you want transitions from each running sprite
 tempCount = 0
 
 
-hitDirection = {"top": False, "bottom": False, "left":False, "right":False} # gives the direction of the collison
-enemeyHit = {"top": False, "bottom": False, "left":False, "right":False}
-
 # the map. 1 represents ground block. 2 represents brick. 0 is nothing. each block is 16
-
 gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-           [0,0,0,0,0,0,2,2,2,2,3,2,2,2,0,0,0,0,0,0],
+           [0,0,0,0,0,0,3,2,2,2,4,2,2,2,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -85,7 +74,7 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 
 gameMapCopy = copy.deepcopy(gameMap) #To not duplicate mBlock object.if value is 1000, shows mBlock position.
 
-class blocks():
+"""class blocks():
     def __init__(self,x,y,blockType,hit,images):
         self.x = x
         self.y = y
@@ -112,11 +101,101 @@ class blocks():
         if not self.hit:
             display.blit(self.images[(self.animeCount // 6) % 3], (self.x, self.y))
         else:
-            display.blit(self.images[3], (self.x, self.y))
+            display.blit(self.images[3], (self.x, self.y))"""
+
+class player():
+    def __init__(self,x,y,playerImages,runImages):
+        self.x = x#x cords
+        self.y = y#y cords
+        self.playerImage = playerImages# standing sprite
+        self.runImages = runImages# the sprites for runnning
+        self.playerSize = playerImage.get_height()
+        self.playerRect = pygame.Rect(x,y, self.playerSize, self.playerSize)# creates a rect for the player
+        self.playerRunCount = 999# 999 signifies that player is not moving. if moving will be between 0 and 7
+        self.runImagesDelay = 9# how slow you want transitions from each running sprite
+        self.playerVelY = 0#player y velocity
+        self.hitDirection = {"top": False, "bottom": False, "left":False, "right":False} # gives the direction of the collison
+        self.movingRight =False#shows if player is moving left or right
+        self.movingLeft = False
+        self.jumping = False#shows whether player is jumping
+        self.powerUp = ""#shows is player has any power up
+
+    def draw(self):
+        if self.playerRunCount == 999:  # if standing
+            display.blit(self.playerImage, [self.playerRect.x, self.playerRect.y])
+        else:  # if running
+            display.blit(self.runImages[self.playerRunCount], [self.playerRect.x, self.playerRect.y])
+
+
+class fireBall():
+    def __init__(self,movingLeft,movingRight,playerRect,fireBallImages):
+        x = playerRect.x + playerRect.width
+        y = playerRect.centery
+        self.rect = pygame.Rect(x,y, fireBallImages.get_width(), fireBallImages.get_height())
+        self.movingLeft = movingLeft
+        self.movingRight = movingRight
+        self.velY = 3
+        self.accel = 0.2
+        if movingRight:
+            self.velX = 3
+        elif movingLeft:
+            self.velX = -3
+        else:
+            self.velX = 3
+        self.hit = False
+        self.images = fireBallImages
+        self.jumpheight = -2
+
+    def move(self):
+        global tileRects
+
+        hitDirection = {"top": False, "bottom": False, "left": False, "right": False}
+
+        if not(self.hit):
+
+            self.rect.x += self.velX
+            hitRect = collideRects(tileRects, self.rect)
+            if len(hitRect) > 0:
+                if self.movingRight:
+                    hitDirection["right"] = True
+                else:
+                    hitDirection["left"] = True
+
+            self.rect.y += self.velY
+            hitRect = collideRects(tileRects, self.rect)
+            if len(hitRect) > 0:
+                if self.velY > 0:
+                    hitDirection["bottom"] = True
+                    self.velY = self.jumpheight
+                    self.rect.bottom = hitRect[0].top
+
+                else:
+                    hitDirection["top"] = True
+
+        if hitDirection["right"] == True and hitDirection["bottom"] == False:
+            self.hit = True
+        elif hitDirection["left"] == True and hitDirection["bottom"] == False:
+            self.hit = True
+        elif hitDirection["bottom"] == True:
+            self.velY = self.jumpheight
+        elif hitDirection["top"] == True :
+            self.velY = -self.velY
+
+        self.velY += self.accel
+
+    def draw(self):
+        if not(self.hit):
+            display.blit(self.images, [self.rect.x, self.rect.y])
+        else:
+            pass
 
 
 
-#creates an enemy object.
+
+
+
+
+    #creates an enemy object.
 class enemies():
 
     def __init__(self,x,y,startX,endX,velX,images):
@@ -168,19 +247,29 @@ class mysteryB:
         self.current = 0
         self.powerVelY = 0.5
         self.powerHit = False
+        self.animeCount = 0
 
         self.rect = pygame.Rect(self.x, self.y, self.image.get_width(), self.image.get_height())
-        self.powerRect = pygame.Rect(self.x, self.y, self.powerImage.get_width(), self.powerImage.get_height())
+        self.powerRect = pygame.Rect(self.x, self.y, 16, 16)
 
     def draw(self):
+        if self.powerUp == "coin":
 
-        if self.hit and not(self.powerHit):
-            if self.powerRect.y - 3> self.startY - 16:
-                display.blit(self.powerImage, (self.powerRect.x, self.powerRect.y - 3))
-                self.powerRect.y -= self.powerVelY
-            else:
-                display.blit(self.powerImage, (self.powerRect.x, self.powerRect.y - 3))
+            self.animeCount += 1
 
+            if self.hit and not(self.powerHit):
+                if self.powerRect.y - 3> self.startY - 16:
+                    display.blit(self.powerImage[(self.animeCount // 8) % 6], (self.powerRect.x, self.powerRect.y - 3))
+                    self.powerRect.y -= self.powerVelY
+                else:
+                    display.blit(self.powerImage[(self.animeCount // 8) % 6], (self.powerRect.x, self.powerRect.y - 3))
+        elif self.powerUp == "fireFlower":
+            if self.hit and not(self.powerHit):
+                if self.powerRect.y - 3> self.startY - 16:
+                    display.blit(self.powerImage[(self.animeCount // 8) % 1], (self.powerRect.x, self.powerRect.y - 3))
+                    self.powerRect.y -= self.powerVelY
+                else:
+                    display.blit(self.powerImage[(self.animeCount // 8) % 1], (self.powerRect.x, self.powerRect.y - 3))
 
 
         equ = lambda x: -(0.5*x**2-4)
@@ -264,16 +353,13 @@ def mBlockCollide(playerRect,movement,mBlockRect):
     return False
 
 
-#shows if player is moving left or right
-movingRight = False
-movingLeft = False
-
-#player velocity
-playerVelY = 0
-
 #initialising goomba
 enemyList = [enemies(66,128,64,256,1,goombaImages),
              enemies(128,48,112,175,1,goombaImages)]
+
+player = player(10,44,playerImage,runImages)
+
+fireBallList = []
 
 mBlockList = []
 
@@ -281,10 +367,16 @@ while True: #Main game loop
 
     display.fill((255,255,255)) # makes screen white
 
+
     for event in pygame.event.get(): #event loop
         if event.type == QUIT: # checks if window is closed
             pygame.quit() #stops pygame
             sys.exit() # stops script
+
+        if event.type == KEYDOWN:
+            if event.key == K_SPACE:
+                fireBallList.append(fireBall(player.movingLeft,player.movingRight,player.playerRect,fireBallImages))
+
 
         #although this code for controls fixes the bug that occurs when changing x direction quickly, it doesnt
         #allow the animation to occur. Hopefully I can fix this later on. Right now, its not a big bug.
@@ -320,36 +412,36 @@ while True: #Main game loop
     keys = pygame.key.get_pressed()
 
     if keys[K_d]: # when d is pressed, moves right
-        movingRight = True
+        player.movingRight = True
 
-        tempCount = (tempCount +1)  % runImagesDelay # only transitions to next sprite when tempCount is 0.
+        tempCount = (tempCount +1)  % player.runImagesDelay # only transitions to next sprite when tempCount is 0.
         if tempCount==0:
-            playerRunCount += 1
-            playerRunCount = playerRunCount % 4 # loops between 0 and 3, which have correspondin sprites in runImages list.
+            player.playerRunCount += 1
+            player.playerRunCount = player.playerRunCount % 4 # loops between 0 and 3, which have correspondin sprites in runImages list.
 
     elif keys[K_a]:# when a is pressed, moves left
-        movingLeft = True
+        player.movingLeft = True
 
-        tempCount = (tempCount + 1) % runImagesDelay # only transitions to next sprite when tempCount is 0.
+        tempCount = (tempCount + 1) % player.runImagesDelay # only transitions to next sprite when tempCount is 0.
         if tempCount == 0:
-            playerRunCount += 1
-            playerRunCount = (playerRunCount % 4) + 4 # loops between 4 and 7, which have correspondin sprites in runImages list.
+            player.playerRunCount += 1
+            player.playerRunCount = (player.playerRunCount % 4) + 4 # loops between 4 and 7, which have correspondin sprites in runImages list.
 
     else:
-        playerRunCount = 999 # signifies player is standing
-        movingLeft = False
-        movingRight = False
+        player.playerRunCount = 999 # signifies player is standing
+        player.movingLeft = False
+        player.movingRight = False
 
 
-    if hitDirection["bottom"] == True: # stops the jump key being pressed when still in air.
+    if player.hitDirection["bottom"] == True: # stops the jump key being pressed when still in air.
 
         if keys[K_w]:# when w is pressed, jumps
-            jumping = True
-            playerVelY = -6 # makes the player move up.
+            player.jumping = True
+            player.playerVelY = -6 # makes the player move up.
 
 
 
-
+    global tileRects
     tileRects = []
     y = 0
     for row in gameMap: # builds the map
@@ -361,7 +453,11 @@ while True: #Main game loop
                 display.blit(brick, (x * blockSize, y * blockSize))
             if tile == 3:
                 if gameMapCopy[y][x] != 1000:
-                    mBlockList.append(mysteryB(x * blockSize, y * blockSize, mysteryBlock,"fireFlower",fireFlower))
+                    mBlockList.append(mysteryB(x * blockSize, y * blockSize, mysteryBlock,"fireFlower",fireFlowerImages))
+                gameMapCopy[y][x] = 1000
+            if tile == 4:
+                if gameMapCopy[y][x] != 1000:
+                    mBlockList.append(mysteryB(x * blockSize, y * blockSize, mysteryBlock,"coin",coinImages))
                 gameMapCopy[y][x] = 1000
             if tile != 0:
                 tileRects.append(pygame.Rect(x * blockSize, y * blockSize, blockSize, blockSize))
@@ -372,76 +468,69 @@ while True: #Main game loop
     playerMovement = [0, 0]
 
     #x direction movement
-    if movingRight:
+    if player.movingRight:
         playerMovement[0] += 2
-    if movingLeft:
+    if player.movingLeft:
         playerMovement[0] -= 2
 
     #y direction movement7y
-    playerMovement[1] += playerVelY
+    playerMovement[1] += player.playerVelY
 
     # decreases the y velocity. when playerVelY is +ive, player goes up. whe -ive, player goes down.
-    playerVelY += 0.2
+    player.playerVelY += 0.2
 
     #sets the y velocity to max 3.
-    if playerVelY > 3:
-        playerVelY = 3
+    if player.playerVelY > 3:
+        player.playerVelY = 3
 
 
 
     #updates the player position and the collision direction
-    playerRect, hitDirection= move(playerRect, playerMovement, tileRects)
+    player.playerRect, player.hitDirection= move(player.playerRect, playerMovement, tileRects)
 
 
     #playerRect, enemyHit = move(playerRect, playerMovement, [goomba.rect])
     for enemy in enemyList:
         if enemy.squashed != True:
-            playerVelY, enemy.squashed = enemyCollide(playerRect, playerMovement, enemy.rect, playerVelY)
+            player.playerVelY, enemy.squashed = enemyCollide(player.playerRect, playerMovement, enemy.rect, player.playerVelY)
 
         # updates goomba movements
         enemy.move()
 
+    for ball in fireBallList:
+        ball.move()
+
+
     for mBlock in mBlockList:
-        if mBlockCollide(playerRect, playerMovement, mBlock.rect):
+        if mBlockCollide(player.playerRect, playerMovement, mBlock.rect):
             mBlock.hit = True
 
-        if mBlock.hit and playerRect.colliderect(mBlock.powerRect):
+        if mBlock.hit and player.playerRect.colliderect(mBlock.powerRect):
             mBlock.powerHit = True
 
 
 
 
 
-
-
-
-
-
-
     #if the player is standing, set the y velocity to 0
-    if hitDirection['bottom']:
-        playerVelY = 0
-    if hitDirection['top']:
-        playerVelY = 0
+    if player.hitDirection['bottom']:
+        player.playerVelY = 0
+    if player.hitDirection['top']:
+        player.playerVelY = 0
 
 
 
 
-
-
-
-
-
-    if playerRunCount == 999: # if standing
-        display.blit(playerImage,[playerRect.x,playerRect.y])
-    else: # if running
-        display.blit(runImages[playerRunCount],[playerRect.x,playerRect.y])
+    player.draw()
 
     for enemy in enemyList:
         enemy.draw()
 
     for mBlock in mBlockList:
         mBlock.draw()
+
+    for ball in fireBallList:
+        ball.draw()
 
     surf = pygame.transform.scale(display,WINDOW_SIZE)
     screen.blit(surf, (0,0))
