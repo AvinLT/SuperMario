@@ -7,9 +7,9 @@ clock = pygame.time.Clock() #initialize clock
 
 pygame.init() #initialize pygame
 
-WINDOW_SIZE = (600,400) #window size
+WINDOW_SIZE = (640,384) #window size
 
-display = pygame.Surface((320,192))
+display = pygame.Surface((320,192)) # what we display images on. later print 'display' on screen
 
 
 screen = pygame.display.set_mode(WINDOW_SIZE,0,32) # initialize window
@@ -29,6 +29,15 @@ pygame.transform.scale(pygame.image.load(r"sprites\marioset\run3left.png"), (pla
 pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (playerSize, playerSize))
 ]
 
+coinImages = [
+pygame.image.load(r"sprites\enemies\c1.png"),
+pygame.image.load(r"sprites\enemies\c2.png"),
+pygame.image.load(r"sprites\enemies\c3.png"),
+pygame.image.load(r"sprites\enemies\c4.png"),
+pygame.image.load(r"sprites\enemies\c5.png"),
+pygame.image.load(r"sprites\enemies\c6.png")
+]
+
 goombaSize = 16
 
 #enemy sprite
@@ -36,9 +45,11 @@ goombaImages = [pygame.transform.scale(pygame.image.load(r"sprites\enemies\goomb
                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaR.png"), (goombaSize, goombaSize)),
                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaSqa.png"), (goombaSize, goombaSize))]
 
+fireFlower = pygame.image.load(r"sprites\enemies\fireflower.png")
 
 blockSize = 16 #size of the blocks on map
 groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBlock.png"), (blockSize, blockSize))
+mysteryBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\mysterybox.png"), (blockSize, blockSize))
 brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (blockSize, blockSize))
 
 
@@ -57,7 +68,8 @@ tempCount = 0
 hitDirection = {"top": False, "bottom": False, "left":False, "right":False} # gives the direction of the collison
 enemeyHit = {"top": False, "bottom": False, "left":False, "right":False}
 
-#the map. 1 represents ground block. 2 represents brick. 0 is nothing. each block is 16
+# the map. 1 represents ground block. 2 represents brick. 0 is nothing. each block is 16
+
 gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -71,6 +83,7 @@ gameMap = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
 
+gameMapCopy = copy.deepcopy(gameMap) #To not duplicate mBlock object.if value is 1000, shows mBlock position.
 
 class blocks():
     def __init__(self,x,y,blockType,hit,images):
@@ -78,7 +91,6 @@ class blocks():
         self.y = y
         self.blockType = blockType
         self.hit = hit
-        self.animeCount = 0
         self.fixedYPos = self.y
         self.images = images
         self.velY = 0
@@ -144,10 +156,57 @@ class enemies():
             if self.deadTimer > 0:
                 display.blit(self.images[2], (self.x, self.y))
 
+class mysteryB:
+    def __init__(self,x,y,image,powerUp,powerImage):
+        self.x = x
+        self.y = y
+        self.startY = y
+        self.hit = False
+        self.powerUp = powerUp
+        self.image = image
+        self.powerImage = powerImage
+        self.current = 0
+        self.powerVelY = 0.5
+        self.powerHit = False
+
+        self.rect = pygame.Rect(self.x, self.y, self.image.get_width(), self.image.get_height())
+        self.powerRect = pygame.Rect(self.x, self.y, self.powerImage.get_width(), self.powerImage.get_height())
+
+    def draw(self):
+
+        if self.hit and not(self.powerHit):
+            if self.powerRect.y - 3> self.startY - 16:
+                display.blit(self.powerImage, (self.powerRect.x, self.powerRect.y - 3))
+                self.powerRect.y -= self.powerVelY
+            else:
+                display.blit(self.powerImage, (self.powerRect.x, self.powerRect.y - 3))
+
+
+
+        equ = lambda x: -(0.5*x**2-4)
+
+        if self.hit and self.current > -1000:
+            display.blit(self.image, (self.x , self.y - equ(self.current)))
+
+            if equ(self.current) < 0:
+                self.current = -1001
+            else:
+                self.current += 0.2
+        else:
+            display.blit(self.image, (self.x, self.y ))
+
+
+
+
+
+
+
+
+
 
 
 #checks to see if player is colliding with any blocks on map
-def colliderects(tileRects, playerRect):
+def collideRects(tileRects, playerRect):
     hitRects = []
     for tile in tileRects:
         if playerRect.colliderect(tile):
@@ -159,7 +218,7 @@ def colliderects(tileRects, playerRect):
 def move(playerRect, movement, tileRects):
     hitDirection = {"top": False, "bottom": False, "left": False, "right": False}
     playerRect.x += movement[0]
-    hitRect = colliderects(tileRects, playerRect)
+    hitRect = collideRects(tileRects, playerRect)
 
     for tile in hitRect:
         if movement[0] > 0:
@@ -170,7 +229,7 @@ def move(playerRect, movement, tileRects):
             hitDirection["left"] = True
 
     playerRect.y += movement[1]
-    hitRect = colliderects(tileRects, playerRect)
+    hitRect = collideRects(tileRects, playerRect)
 
     for tile in hitRect:
         if movement[1] > 0:
@@ -182,18 +241,27 @@ def move(playerRect, movement, tileRects):
 
     return playerRect, hitDirection
 
-def enemycollide(playerRect,movement,rectlist,playerVelY):
+def enemyCollide(playerRect,movement,enemyRect,playerVelY):
     temp = copy.deepcopy(playerRect)
     temp.y += movement[1]
-    hitRect = colliderects(rectlist, temp)
+    didHit = temp.colliderect(enemyRect)
     squashed = False
 
-    for enemy in hitRect:
+    if didHit:
         if movement[1] >= 1.5:
             playerVelY = -3
             squashed = True
 
     return playerVelY, squashed
+
+def mBlockCollide(playerRect,movement,mBlockRect):
+    temp = copy.deepcopy(playerRect)
+    temp.y += movement[1]
+    didHit = temp.colliderect(mBlockRect)
+
+    if movement[1] <= 0 and didHit:
+        return True
+    return False
 
 
 #shows if player is moving left or right
@@ -207,11 +275,11 @@ playerVelY = 0
 enemyList = [enemies(66,128,64,256,1,goombaImages),
              enemies(128,48,112,175,1,goombaImages)]
 
+mBlockList = []
+
 while True: #Main game loop
 
     display.fill((255,255,255)) # makes screen white
-
-
 
     for event in pygame.event.get(): #event loop
         if event.type == QUIT: # checks if window is closed
@@ -273,13 +341,11 @@ while True: #Main game loop
         movingRight = False
 
 
-    if hitDirection["bottom"]==True: # stops the jump key being pressed when still in air.
+    if hitDirection["bottom"] == True: # stops the jump key being pressed when still in air.
 
         if keys[K_w]:# when w is pressed, jumps
             jumping = True
             playerVelY = -6 # makes the player move up.
-
-
 
 
 
@@ -294,7 +360,9 @@ while True: #Main game loop
             if tile == 2:
                 display.blit(brick, (x * blockSize, y * blockSize))
             if tile == 3:
-                pass
+                if gameMapCopy[y][x] != 1000:
+                    mBlockList.append(mysteryB(x * blockSize, y * blockSize, mysteryBlock,"fireFlower",fireFlower))
+                gameMapCopy[y][x] = 1000
             if tile != 0:
                 tileRects.append(pygame.Rect(x * blockSize, y * blockSize, blockSize, blockSize))
             x += 1
@@ -309,7 +377,7 @@ while True: #Main game loop
     if movingLeft:
         playerMovement[0] -= 2
 
-    #y direction movement
+    #y direction movement7y
     playerMovement[1] += playerVelY
 
     # decreases the y velocity. when playerVelY is +ive, player goes up. whe -ive, player goes down.
@@ -328,12 +396,27 @@ while True: #Main game loop
     #playerRect, enemyHit = move(playerRect, playerMovement, [goomba.rect])
     for enemy in enemyList:
         if enemy.squashed != True:
-            playerVelY, enemy.squashed = enemycollide(playerRect, playerMovement, [enemy.rect], playerVelY)
+            playerVelY, enemy.squashed = enemyCollide(playerRect, playerMovement, enemy.rect, playerVelY)
+
+        # updates goomba movements
         enemy.move()
 
-    #updates goomba movements
+    for mBlock in mBlockList:
+        if mBlockCollide(playerRect, playerMovement, mBlock.rect):
+            mBlock.hit = True
 
-    #goomba1.move()
+        if mBlock.hit and playerRect.colliderect(mBlock.powerRect):
+            mBlock.powerHit = True
+
+
+
+
+
+
+
+
+
+
 
     #if the player is standing, set the y velocity to 0
     if hitDirection['bottom']:
@@ -356,6 +439,9 @@ while True: #Main game loop
 
     for enemy in enemyList:
         enemy.draw()
+
+    for mBlock in mBlockList:
+        mBlock.draw()
 
     surf = pygame.transform.scale(display,WINDOW_SIZE)
     screen.blit(surf, (0,0))
