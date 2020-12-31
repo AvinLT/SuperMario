@@ -73,6 +73,7 @@ brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (
 tempCount = 0 # used for animation of player running
 
 global cameraMove
+True_cameraMove = [0,0]
 cameraMove = [0,0]
 
 def loadMap(path):
@@ -177,6 +178,7 @@ class fireBall():
         if hitDirection["right"] == True:
             self.hit = True
         elif hitDirection["left"] == True:
+
             self.hit = True
         elif hitDirection["bottom"] == True:
             self.velY = self.bounceSpeed #bouncing
@@ -193,8 +195,84 @@ class fireBall():
             display.blit(self.images, [self.rect.x-cameraMove[0], self.rect.y-cameraMove[1]])
 
 
+class bossFireBall():
+    def __init__(self,player,boss,image):
+        self.player = player
+        self.boss = boss
+        self.playerCentre = [player.playerRect.centerx, player.playerRect.centery]
+        self.image = image
+        self.length = image.get_height()
+        if boss.facing == [0,1]:
+            self.rect = pygame.Rect((boss.rect.x + boss.rect.width), (boss.rect.y - boss.rect.height/4), self.length, self.length )
+        else:
+            self.rect = pygame.Rect((boss.rect.x + self.length), (boss.rect.y - boss.rect.height/4), self.length, self.length )
+        self.grad = [1,(self.playerCentre[1] - self.rect.y)/(self.playerCentre[0] - self.rect.x)]
+        self.hit = False
+
+    def move(self):
+
+        self.rect.x +=self.grad[0]
+        self.rect.y += self.grad[1]
+        if len(collideRects(tileRects,self.rect))>0 or self.rect.colliderect(player.playerRect):
+            self.hit = True
+
+    def draw(self):
+        display.blit(self.image,(self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]))
+
+class bossHammer():
+    def __init__(self,player,boss,image):
+        self.player = player
+        self.boss = boss
+        self.playerCentre = [player.playerRect.centerx, player.playerRect.centery]
+        self.image = image
+        self.length = image.get_height()
+        self.accel = 0.2
+        self.velY = -2
+        if boss.facing == [0, 1]:
+            self.rect = pygame.Rect((boss.rect.x + boss.rect.width), (boss.rect.y - boss.rect.height / 4), self.length,
+                                    self.length)
+        else:
+            self.rect = pygame.Rect((boss.rect.x + self.length), (boss.rect.y - boss.rect.height / 4), self.length,
+                                    self.length)
+        self.time = self.velY
+        self.hit = False
+
+
+
 class boss():
-    pass
+    def __init__(self,x,y,player,sightRange,meleeRange,standImages,runImages,throwableImages):
+
+        self.player = player
+        self.rect = pygame.Rect(x,y,standImages[0].get_width(), standImages[0].get_height())
+        self.rangeRect = pygame.Rect(int(x-sightRange/2 + self.rect.width/2),int(y-sightRange/2 + self.rect.height/2),sightRange,sightRange)
+        self.meleeRect = pygame.Rect(int(x-meleeRange/2 + self.rect.width/2),int(y-meleeRange/2 + self.rect.height/2),meleeRange,meleeRange)
+        self.standImages = standImages
+        self.runImages = runImages
+        self.throwableImages = throwableImages
+        self.accel = 0.2
+        self.playerRunCount = 999  # 999 signifies that player is not moving. if moving will be between 0 and 7
+        self.runImagesDelay = 9  # how slow you want transitions from each running sprite
+        self.playerVelY = 0  # player y velocity
+        self.hitDirection = {"top": False, "bottom": False, "left": False, "right": False}  # gives the direction of the collison
+        self.movingRight = False  # shows if player is moving left or right
+        self.movingLeft = False  # shows if player is moving left or right
+        self.facing = [0, 1]  # if [1,0], standing and facing left. if [0,1], standing and facing right
+        self.fireBallList = []
+
+
+
+
+    def scan(self,player):
+        if self.rangeRect.colliderect(player.playerRect):
+
+
+
+
+            if self.meleeRect.colliderect(player.playerRect):
+                pass
+
+
+
 
 #creates an enemy object.
 class enemies():
@@ -293,10 +371,10 @@ class mysteryB:
 
 
 #checks to see if player is colliding with any blocks on map
-def collideRects(tileRects, playerRect):
+def collideRects(tileRects, Rect):
     hitRects = []
     for tile in tileRects:
-        if playerRect.colliderect(tile):
+        if Rect.colliderect(tile):
             hitRects.append(tile)
     return hitRects
 
@@ -367,8 +445,11 @@ while True: #Main game loop
 
     display.fill((255,255,255)) # makes screen white
 
-    cameraMove[0] += player.playerRect.x - cameraMove[0] - 148
-    cameraMove[1] += player.playerRect.y - cameraMove[1] - 94
+    True_cameraMove[0] += (player.playerRect.x - cameraMove[0] - 148)/10
+    True_cameraMove[1] += (player.playerRect.y - cameraMove[1] - 94)/10
+    cameraMove = True_cameraMove.copy()
+    cameraMove[0] = int(cameraMove[0])
+    cameraMove[1] = int(cameraMove[1])
 
 
     for event in pygame.event.get(): #event loop
@@ -377,7 +458,7 @@ while True: #Main game loop
             sys.exit() # stops script
 
         if event.type == KEYDOWN:
-            if event.key == K_SPACE:
+            if event.key == K_SPACE and player.powerUp == "fireFlower":
                 fireBallList.append(fireBall(player.facing,player.playerRect,fireBallImages))
 
 
