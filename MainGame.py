@@ -1,5 +1,7 @@
 import pygame, sys
 import copy
+import cmath
+import random
 from pygame.locals import * #import modules
 
 
@@ -31,9 +33,16 @@ pygame.transform.scale(pygame.image.load(r"sprites\marioset\run2left.png"), (pla
 
 playerWidth = 20
 playerHeight = 35
+bowserWidth = 40
+bowserHeight = 50
 
 firePlayerImages = [pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\marioset\fireStand.png"), True, False), (playerWidth, playerHeight)),
                     pygame.transform.scale(pygame.image.load(r"sprites\marioset\fireStand.png"), (playerWidth, playerHeight)),
+                ]
+
+bowserImages = [
+                    pygame.transform.scale(pygame.image.load(r"sprites\enemies\bowserstandleft.PNG"), (bowserWidth, bowserHeight)),
+                    pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\enemies\bowserstandleft.PNG"), True, False), (bowserWidth, bowserHeight))
                 ]
 
 fireRunImages = [pygame.transform.scale(pygame.image.load(r"sprites\marioset\fireRunRight1.PNG"), (playerWidth, playerHeight)),
@@ -45,6 +54,20 @@ fireRunImages = [pygame.transform.scale(pygame.image.load(r"sprites\marioset\fir
                  pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\marioset\fireRunRight1.PNG"), True, False),(playerWidth, playerHeight)),
                  pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\marioset\fireRunRight3.PNG"), True, False),(playerWidth, playerHeight))
                  ]
+bowserRunImages = [pygame.transform.scale(pygame.image.load(r"sprites\enemies\runleft1.PNG"), (bowserWidth, bowserHeight)),
+                pygame.transform.scale(pygame.image.load(r"sprites\enemies\runleft2.PNG"), (bowserWidth, bowserHeight)),
+                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\runleft3.PNG"), (bowserWidth, bowserHeight)),
+                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\runleft4.PNG"),(bowserWidth, bowserHeight)),
+
+                 pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\enemies\runleft1.PNG"), True, False),(bowserWidth, bowserHeight)),
+                 pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\enemies\runleft2.PNG"), True, False),(bowserWidth, bowserHeight)),
+                 pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\enemies\runleft3.PNG"), True, False),(bowserWidth, bowserHeight)),
+                 pygame.transform.scale(pygame.transform.flip(pygame.image.load(r"sprites\enemies\runleft4.PNG"), True, False),(bowserWidth, bowserHeight))
+                 ]
+
+bowserPowers = [pygame.transform.scale(pygame.image.load(r"sprites\interactables\boswerFire.PNG"), (10, 10)),
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\bowserHammer.PNG"), (10, 10))
+                ]
 
 coinImages = [
 pygame.image.load(r"sprites\interactables\c1.png"),
@@ -63,6 +86,8 @@ goombaImages = [pygame.transform.scale(pygame.image.load(r"sprites\enemies\goomb
 fireFlowerImages = [pygame.image.load(r"sprites\interactables\fireflower.png")]
 
 fireBallImages = pygame.image.load(r"sprites\interactables\fireBall.png")
+
+
 
 blockSize = 16 #size of the blocks on map
 groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBlock.png"), (blockSize, blockSize))
@@ -118,7 +143,7 @@ class player():
                 display.blit(self.playerImages[1], [self.playerRect.x - cameraMove[0], self.playerRect.y - cameraMove[1]])
             elif self.facing == [1,0] and self.playerRunCount == 999:  # if standing and facing right
                 display.blit(self.playerImages[0], [self.playerRect.x - cameraMove[0], self.playerRect.y- cameraMove[1]])
-            else:  # if standing
+            else:  # if running
                 display.blit(self.runImages[self.playerRunCount], [self.playerRect.x - cameraMove[0],self.playerRect.y- cameraMove[1]])
         elif powerUp == "fireFlower":
             if self.facing == [0,1] and self.playerRunCount == 999: # if standing and facing left
@@ -206,18 +231,47 @@ class bossFireBall():
             self.rect = pygame.Rect((boss.rect.x + boss.rect.width), (boss.rect.y - boss.rect.height/4), self.length, self.length )
         else:
             self.rect = pygame.Rect((boss.rect.x + self.length), (boss.rect.y - boss.rect.height/4), self.length, self.length )
-        self.grad = [1,(self.playerCentre[1] - self.rect.y)/(self.playerCentre[0] - self.rect.x)]
+        xdif = (self.playerCentre[0] - self.rect.x)
+        ydif = (self.playerCentre[1] - self.rect.y)
+        self.grad = [xdif/max(abs(xdif),abs(ydif)),ydif/max(abs(xdif),abs(ydif))]
+        self.xTemp = 0
+        self.yTemp = 0
+
         self.hit = False
 
     def move(self):
+        self.xTemp += self.grad[0]
+        if abs(self.xTemp) >= 1:
+            self.rect.x += self.xTemp
+            self.xTemp = self.xTemp-1 if self.xTemp>=0 else self.xTemp+1
 
-        self.rect.x +=self.grad[0]
-        self.rect.y += self.grad[1]
+        self.yTemp += self.grad[1]
+        if abs(self.yTemp) >= 1:
+            self.rect.y += self.yTemp
+            self.yTemp = self.yTemp - 1 if self.yTemp >= 0 else self.yTemp + 1
+
         if len(collideRects(tileRects,self.rect))>0 or self.rect.colliderect(player.playerRect):
             self.hit = True
 
     def draw(self):
-        display.blit(self.image,(self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]))
+        if not(self.hit):
+            display.blit(self.image,(self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]))
+
+def checktime(yPos,acel,yVel,yTarg):
+    tot = 0
+    count = 0
+    if yTarg < yPos:
+        while yPos + tot > yTarg:
+            tot += yVel
+            yVel += acel
+            count += 1
+    else:
+        acel *= -1
+        while yPos + tot < yTarg:
+            tot += yVel
+            yVel += acel
+            count += 1
+    return count
 
 class bossHammer():
     def __init__(self,player,boss,image):
@@ -234,8 +288,38 @@ class bossHammer():
         else:
             self.rect = pygame.Rect((boss.rect.x + self.length), (boss.rect.y - boss.rect.height / 4), self.length,
                                     self.length)
-        self.time = self.velY
+
+        self.time = 10
+        u = ((self.rect.y - self.playerCentre[1]) - 0.5*-self.accel*self.time**2)/self.time
+        self.velY = u/3
+
+        """a = 0.5*-self.accel
+        b = -self.velY
+        c = -(self.rect.y - self.playerCentre[1])
+        d = (b ** 2) - (4 * a * c)
+        sol1 = (-b - cmath.sqrt(d)) / (2 * a)
+        sol2 = (-b + cmath.sqrt(d)) / (2 * a)
+        if sol1.imag == 0 and sol1.real > 0:
+            self.time = sol1.real/60
+        elif sol2.imag == 0 and sol2.real > 0:
+            self.time = sol2.real/60
+        else:
+            print("TIME WRONG")"""
+
+        self.velX = (self.playerCentre[0]-self.rect.x)/checktime(self.playerCentre[1],-self.accel,-self.velY,self.rect.y)
         self.hit = False
+
+    def move(self):
+        self.rect.x += self.velX
+        self.rect.y += self.velY
+        self.velY = self.velY + self.accel
+
+        if len(collideRects(tileRects,self.rect))>0 or self.rect.colliderect(player.playerRect):
+            self.hit = True
+
+    def draw(self):
+        if not(self.hit):
+            display.blit(self.image, (self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]))
 
 
 
@@ -250,26 +334,101 @@ class boss():
         self.runImages = runImages
         self.throwableImages = throwableImages
         self.accel = 0.2
-        self.playerRunCount = 999  # 999 signifies that player is not moving. if moving will be between 0 and 7
-        self.runImagesDelay = 9  # how slow you want transitions from each running sprite
-        self.playerVelY = 0  # player y velocity
+        self.moving = "left"
+        self.runCount = 0 # 999 signifies that player is not moving. if moving will be between 0 and 7
+        self.runImagesDelay = 10  # how slow you want transitions from each running sprite
         self.hitDirection = {"top": False, "bottom": False, "left": False, "right": False}  # gives the direction of the collison
-        self.movingRight = False  # shows if player is moving left or right
-        self.movingLeft = False  # shows if player is moving left or right
-        self.facing = [0, 1]  # if [1,0], standing and facing left. if [0,1], standing and facing right
+        self.facing = [1, 0]  # if [1,0], standing and facing left. if [0,1], standing and facing right
         self.fireBallList = []
-
-
+        self.hammerThrowList = []
+        self.moveCountMark = 40
+        self.pauseCountMark = 60
+        self.moveCount = self.moveCountMark
+        self.pauseCount = self.pauseCountMark
+        self.velX = 1
+        self.velY = 0
+        self.sign = -1
+        self.tempCount = 0
 
 
     def scan(self,player):
         if self.rangeRect.colliderect(player.playerRect):
-
-
-
-
             if self.meleeRect.colliderect(player.playerRect):
                 pass
+
+    def move(self):
+
+        for fireball in self.fireBallList:
+            fireball.move()
+        for hammer in self.hammerThrowList:
+            hammer.move()
+
+        self.rect, self.hitDirection = move(self.rect, [0, self.velY], tileRects)
+        self.velY += self.accel
+        if self.velY > 4:
+            self.velY = 4
+
+        if self.moveCount > 0:
+
+
+            self.tempCount += 1
+            if self.tempCount % self.runImagesDelay == 0:
+                self.runCount = (self.runCount + 1) % 4
+
+            if self.sign == -1:
+                self.moving = "left"
+            else:
+                self.moving = "rigth"
+            if self.tempCount % 2 == 0:
+
+                self.rect.x += self.sign * self.velX
+                movement = [self.sign * self.velX,0 ]
+
+
+                self.rect, self.hitDirection = move(self.rect, movement, tileRects)
+
+
+                self.moveCount -= 1
+        else:
+            self.moving = "standing"
+            if self.pauseCount > 0:
+                self.pauseCount -= 1
+            else:
+                self.moveCount = self.moveCountMark
+                self.pauseCount = self.pauseCountMark
+                rand = random.randint(0, 100)
+
+                if rand < 50:
+                    self.sign = 1
+                    self.facing = [0, 1]
+                else:
+                    self.sign = -1
+                    self.facing = [1, 0]
+
+                if rand > 50:
+                    self.fireBallList.append(bossFireBall(self.player,self,self.throwableImages[0]))
+                elif rand > 1:
+                    self.hammerThrowList.append(bossHammer(self.player, self, self.throwableImages[1]))
+                else:
+                    pass
+
+    def draw(self):
+        for fireball in self.fireBallList:
+            fireball.draw()
+        for hammer in self.hammerThrowList:
+            hammer.draw()
+
+        if self.facing == [0, 1] and self.moving == "standing":  # if standing and facing rigth
+            display.blit(self.standImages[1], [self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]])
+        elif self.facing == [1, 0] and self.moving == "standing":  # if standing and facing left
+            display.blit(self.standImages[0], [self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]])
+        else:  # if running
+            if self.facing == [1, 0] and self.moving != "standing":
+                display.blit(self.runImages[self.runCount], [self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]])
+            else:
+                display.blit(self.runImages[self.runCount+4], [self.rect.x - cameraMove[0], self.rect.y - cameraMove[1]])
+
+
 
 
 
@@ -434,6 +593,8 @@ def mBlockCollide(playerRect,movement,mBlockRect):
 
 player = player(10,44,playerImages,runImages,firePlayerImages,fireRunImages)
 
+bowser = boss(80,40,player,100,25,bowserImages,bowserRunImages,bowserPowers)
+
 #initialising goomba
 enemyList = [enemies(66,128,64,256,1,goombaImages),
              enemies(128,48,112,175,1,goombaImages)]
@@ -460,6 +621,8 @@ while True: #Main game loop
         if event.type == KEYDOWN:
             if event.key == K_SPACE and player.powerUp == "fireFlower":
                 fireBallList.append(fireBall(player.facing,player.playerRect,fireBallImages))
+            if event.key == K_j:
+                bowser.velY = -4
 
 
         #although this code for controls fixes the bug that occurs when changingd x direction quickly, it doesnt
@@ -585,6 +748,9 @@ while True: #Main game loop
     for fireball in fireBallList:
         fireball.move()
 
+    bowser.move()
+
+
     # checks to see is mBlock and power up have been hit
     for mBlock in mBlockList:
         if mBlockCollide(player.playerRect, playerMovement, mBlock.rect):
@@ -607,7 +773,7 @@ while True: #Main game loop
         player.playerVelY = 0
 
 
-
+    bowser.draw()
     player.draw(player.powerUp)
 
     for enemy in enemyList:
