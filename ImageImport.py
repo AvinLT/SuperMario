@@ -1,6 +1,3 @@
-# some sprites are blurry and have white a background
-# unfortunately I am not good at pixel art :/
-
 import pygame
 
 def setColourKey(imagesList):
@@ -80,12 +77,12 @@ bowserPowers = [pygame.transform.scale(pygame.image.load(r"sprites\interactables
                 ]
 
 coinImages = [
-pygame.image.load(r"sprites\interactables\c1.png"),
-pygame.image.load(r"sprites\interactables\c2.png"),
-pygame.image.load(r"sprites\interactables\c3.png"),
-pygame.image.load(r"sprites\interactables\c4.png"),
-pygame.image.load(r"sprites\interactables\c5.png"),
-pygame.image.load(r"sprites\interactables\c6.png")
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\c1.png"),(16,16)),
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\c2.png"),(16,16)),
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\c3.png"),(16,16)),
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\c4.png"),(16,16)),
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\c5.png"),(16,16)),
+pygame.transform.scale(pygame.image.load(r"sprites\interactables\c6.png"),(16,16))
 ]
 
 goombaSize = 16
@@ -93,7 +90,7 @@ goombaImages = [pygame.transform.scale(pygame.image.load(r"sprites\enemies\goomb
                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaR.png"), (goombaSize, goombaSize)),
                 pygame.transform.scale(pygame.image.load(r"sprites\enemies\goombaSqa.png"), (goombaSize, goombaSize))]
 
-fireFlowerImages = [pygame.image.load(r"sprites\interactables\fireflower.png")]
+fireFlowerImages = [pygame.transform.scale(pygame.image.load(r"sprites\interactables\fireflower.png"),(16,16))]
 
 fireBallImages = pygame.image.load(r"sprites\interactables\fireBall.png")
 
@@ -104,7 +101,9 @@ groundBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\groundBl
 mysteryBlock = pygame.transform.scale(pygame.image.load(r"sprites\blocks\mysterybox.png"), (blockSize, blockSize))
 brick = pygame.transform.scale(pygame.image.load(r"sprites\blocks\brick.png"), (blockSize, blockSize))
 
+background = pygame.transform.scale(pygame.image.load(r"sprites\blocks\background.png"), (320, 192))
 
+# removes most of the white in the background of images. but its not perfect
 setColourKey([playerImages,runImages,firePlayerImages,bowserImages,
               fireRunImages,bowserRunImages,bowserPowers,coinImages,
               goombaImages,fireFlowerImages,fireBallImages,groundBlock,

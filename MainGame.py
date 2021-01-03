@@ -1,5 +1,8 @@
 # Made by Avin Lanson
 
+# some sprites are blurry and have white a background
+# unfortunately I am not good at pixel art :/
+
 import sys, copy, random
 from pygame.locals import *
 from ImageImport import *
@@ -568,7 +571,7 @@ mBlockList = [] # list of mysteryBlock objects
 
 delays = [delay(player.runImagesDelay)]
 titletimer = 350 # amount of time controls at start are visible
-monospace = pygame.font.SysFont("monospace", 8) # font type
+monospace = pygame.font.SysFont("monospace", 9,bold = True) # font type
 
 global tileRects
 tileRects = []
@@ -578,6 +581,8 @@ tileRects = []
 while True: #Main game loop
 
     display.fill((0,0,0)) # makes screen white
+
+    display.blit(background, (0, 0 ))
 
     # camera movements
     True_cameraMove[0] += (player.playerRect.x - cameraMove[0] - 148)/10
@@ -755,7 +760,6 @@ while True: #Main game loop
     for ball in fireBallList:
         ball.draw()
 
-    display.blit(test, (40 - cameraMove[0], 100 - cameraMove[1]))
 
     # makes boss range rect visible
     pygame.draw.rect(display,(255,0,0),pygame.Rect(bowser.rangeRect.x-cameraMove[0], bowser.rangeRect.y-cameraMove[1], bowser.rangeRect.width, bowser.rangeRect.width),1)
