@@ -1,10 +1,21 @@
+# just for testing purposes
+
+
 import pygame, sys
 import random
 import copy
 from fractions import Fraction
 from pygame.locals import *
 
+a = [1,2,4]
+print(type(a))
+if type(a) == list:
+    print("LIST")
+
+
 a = pygame.Rect(100,144-28, 10, 10)
+a.x += 2
+print(a.x)
 c = pygame.image.load(r"sprites\interactables\c1.png")
 
 """import cmath
