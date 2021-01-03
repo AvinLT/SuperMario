@@ -762,7 +762,7 @@ while True: #Main game loop
 
 
     # makes boss range rect visible
-    pygame.draw.rect(display,(255,0,0),pygame.Rect(bowser.rangeRect.x-cameraMove[0], bowser.rangeRect.y-cameraMove[1], bowser.rangeRect.width, bowser.rangeRect.width),1)
+    # pygame.draw.rect(display,(255,0,0),pygame.Rect(bowser.rangeRect.x-cameraMove[0], bowser.rangeRect.y-cameraMove[1], bowser.rangeRect.width, bowser.rangeRect.width),1)
 
     # displays onto mainDisplay
     mainDisplay = pygame.transform.scale(display,WINDOW_SIZE)
